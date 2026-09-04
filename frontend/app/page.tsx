@@ -166,7 +166,7 @@ export default function LectureApp() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("https://lecture-ai-7fqi.onrender.com/process-file", {
+      const res = await fetch("https://lecture-ai-7fqi.onrender.com/api/process-file", {
         method: "POST",
         body: formData,
       });
@@ -195,7 +195,7 @@ export default function LectureApp() {
     setFlippedCards({});
 
     try {
-      const res = await fetch("https://lecture-ai-7fqi.onrender.com/process-youtube", {
+      const res = await fetch("https://lecture-ai-7fqi.onrender.com/api/process-youtube", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: youtubeUrl }),

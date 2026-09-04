@@ -177,7 +177,7 @@ You must return a raw JSON object with this EXACT structure:
 """
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="llama-3.3-70bb-versatile",
         messages=[
             {
                 "role": "system",

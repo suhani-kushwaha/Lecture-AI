@@ -37,7 +37,7 @@ interface StudyData {
   quiz?: QuizItem[];
 }
 
-export default function LecturaApp() {
+export default function LectureApp() {
   const [activeTab, setActiveTab] = useState<"notes" | "flashcards" | "quiz">("notes");
   const [loading, setLoading] = useState<boolean>(false);
   const [studyData, setStudyData] = useState<StudyData | null>(null);
@@ -248,7 +248,7 @@ export default function LecturaApp() {
 
   // Generate UPI QR Code URL with automatic locked amount and currency
   const planAmount = selectedPlan === "monthly" ? 199 : 999;
-  const upiPayload = `upi://pay?pa=${MY_ACTUAL_UPI_ID}&pn=LecturaAI&am=${planAmount}.00&cu=INR&tn=Lectura%20AI%20${selectedPlan}`;
+  const upiPayload = `upi://pay?pa=${MY_ACTUAL_UPI_ID}&pn=LectureAI&am=${planAmount}.00&cu=INR&tn=Lecture%20AI%20${selectedPlan}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiPayload)}`;
 
   return (
@@ -260,7 +260,7 @@ export default function LecturaApp() {
             <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-lg text-white">Lectura AI</span>
+            <span className="font-bold text-lg text-white">Lecture AI</span>
             {profile.is_premium && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 font-bold">
                 <Crown className="w-2.5 h-2.5" /> PRO
@@ -573,7 +573,7 @@ export default function LecturaApp() {
 
             {settingsActiveView === "about" && (
               <div className="text-xs text-slate-300 space-y-2">
-                <p><strong>Lectura AI</strong> transforms university notes and videos into structured study guides.</p>
+                <p><strong>Lecture AI</strong> transforms university notes and videos into structured study guides.</p>
               </div>
             )}
 

@@ -166,7 +166,7 @@ export default function LecturaApp() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/process-file", {
+      const res = await fetch("https://lecture-ai-7fqi.onrender.com/process-file", {
         method: "POST",
         body: formData,
       });
@@ -195,7 +195,7 @@ export default function LecturaApp() {
     setFlippedCards({});
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/process-youtube", {
+      const res = await fetch("https://lecture-ai-7fqi.onrender.com/process-youtube", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: youtubeUrl }),

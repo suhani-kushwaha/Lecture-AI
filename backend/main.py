@@ -205,7 +205,7 @@ def home():
     return {"message": "Lectura AI Universal API is live! 🚀"}
 
 
-@app.post("/api/process-file")
+@app.post("/process-file")
 def process_file(file: Annotated[UploadFile, File()]):
     temp_path = os.path.join(UPLOAD_FOLDER, file.filename)
     with open(temp_path, "wb") as buffer:
@@ -257,7 +257,7 @@ class LinkInput(BaseModel):
     url: str
 
 
-@app.post("/api/process-youtube")
+@app.post("/process-youtube")
 def process_youtube(payload: LinkInput):
     try:
         raw_text = download_youtube_audio(payload.url)

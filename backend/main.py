@@ -89,8 +89,6 @@ def transcribe_audio_file(file_path: str) -> str:
     return transcription.text
 
 
-import yt_dlp
-
 
 def download_youtube_audio(url: str, output_path: str = "temp_yt.mp3") -> str:
     parsed_url = urlparse.urlparse(url.strip())
@@ -281,7 +279,7 @@ You must return a raw JSON object with this EXACT structure:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-versatile",
         messages=[
             {
                 "role": "system",

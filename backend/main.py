@@ -2,6 +2,7 @@ import json
 import os
 import re
 import shutil
+import urllib.parse as urlparse
 from typing import Annotated
 
 import docx
@@ -88,16 +89,25 @@ def transcribe_audio_file(file_path: str) -> str:
 
 
 def download_youtube_audio(url: str, output_path: str = "temp_yt.mp3") -> str:
-    match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", url)
-    if not match:
-        raise ValueError("Invalid YouTube URL")
-    video_id = match.group(1)
+    parsed_url = urlparse.urlparse(url)
+    video_id = None
+    if parsed_url.hostname in ('youtu.be', 'www.youtu.be'):
+        video_id = parsed_url.path.lstrip('/')
+    elif parsed_url.hostname in ('youtube.com', 'www.youtube.com'):
+        if parsed_url.path == '/watch':
+            p = urlparse.parse_qs(parsed_url.query)
+            video_id = p.get('v', [None])[0]
+        elif parsed_url.path.startswith('/shorts/'):
+            video_id = parsed_url.path.split('/')[2]
 
-    transcript = YouTubeTranscriptApi().fetch(video_id, languages=["hi", "en"])
-    try:
-        return " ".join([snippet.text for snippet in transcript])
-    except AttributeError:
-        return " ".join([snippet["text"] for snippet in transcript])
+    if video_id and '?' in video_id:
+        video_id = video_id.split('?')[0]
+
+    if not video_id:
+        raise ValueError("Invalid YouTube URL")
+
+    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'hi', 'en-IN'])
+    return " ".join([item['text'] for item in transcript_list])
 
 
 def generate_study_deck(raw_text: str):

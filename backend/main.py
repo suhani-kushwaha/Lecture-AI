@@ -279,7 +279,7 @@ You must return a raw JSON object with this EXACT structure:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[
             {
                 "role": "system",

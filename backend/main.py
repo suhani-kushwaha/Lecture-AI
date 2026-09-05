@@ -8,6 +8,7 @@ from typing import Annotated
 import docx
 import pandas as pd
 import pytesseract
+import yt_dlp
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -88,7 +89,63 @@ def transcribe_audio_file(file_path: str) -> str:
     return transcription.text
 
 
+import yt_dlp
+
+
 def download_youtube_audio(url: str, output_path: str = "temp_yt.mp3") -> str:
+    parsed_url = urlparse.urlparse(url.strip())
+    video_id = None
+
+    if parsed_url.hostname in ("youtu.be", "www.youtu.be"):
+        video_id = parsed_url.path.lstrip("/")
+    elif parsed_url.hostname in ("youtube.com", "www.youtube.com", "m.youtube.com"):
+        if parsed_url.path == "/watch":
+            video_id = urlparse.parse_qs(parsed_url.query).get("v", [None])[0]
+        elif parsed_url.path.startswith("/shorts/"):
+            video_id = parsed_url.path.split("/")[2]
+
+    if video_id:
+        if "?" in video_id:
+            video_id = video_id.split("?")[0]
+        if "&" in video_id:
+            video_id = video_id.split("&")[0]
+
+        try:
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            try:
+                t = transcript_list.find_transcript(["en", "hi", "en-IN"])
+            except Exception:
+                t = transcript_list.find_generated_transcript(["en", "hi"])
+            data = t.fetch()
+            return " ".join([item.get("text", "") for item in data if "text" in item])
+        except Exception:
+            pass
+
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': 'temp_yt.%(ext)s',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '64',
+        }],
+        'quiet': True,
+        'no_warnings': True
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+            
+        actual_path = "temp_yt.mp3"
+        if os.path.exists(actual_path):
+            text = transcribe_audio_file(actual_path)
+            os.remove(actual_path)
+            return text
+        else:
+            raise ValueError("Audio processing failed.")
+    except Exception as e:
+        raise ValueError(f"Could not extract audio from video: {str(e)}")
     parsed_url = urlparse.urlparse(url.strip())
     video_id = None
 

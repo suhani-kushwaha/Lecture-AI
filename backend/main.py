@@ -101,8 +101,8 @@ def download_youtube_audio(url: str, output_path: str = "temp_yt.mp3") -> str:
 
 
 def generate_study_deck(raw_text: str):
-    if not raw_text or len(raw_text.strip()) < 15:
-        raise ValueError("Content is too short or empty to generate notes.")
+    if not raw_text or len(raw_text.strip()) < 5:
+        return {"status": "error", "message": "File me readable text nahi mila. Scanned photo ke bajaye digital text upload karein."}
 
     truncated_text = raw_text[:12000]
 
@@ -177,7 +177,7 @@ You must return a raw JSON object with this EXACT structure:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70bb-versatile",
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
@@ -247,7 +247,10 @@ def process_file(file: Annotated[UploadFile, File()]):
     except HTTPException:
         raise
     except Exception as e: # noqa
-        raise HTTPException(status_code=500, detail=str(e))
+       import traceback
+       traceback.print_exc()
+       print(f"FILE ERROR: {e}")
+       raise HTTPException(status_code=500, detail=str(e))
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -263,7 +266,8 @@ def process_youtube(payload: LinkInput):
         raw_text = download_youtube_audio(payload.url)
         study_package = generate_study_deck(raw_text)
         return {"status": "success", "data": study_package}
-    except HTTPException:
-        raise
     except Exception as e: # noqa
-        raise HTTPException(status_code=500, detail=str(e))
+       import traceback
+       traceback.print_exc()
+       print(f"YOUTUBE ERROR: {e}")
+       raise HTTPException(status_code=500, detail=str(e))

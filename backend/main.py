@@ -25,7 +25,7 @@ app = FastAPI(title="Lectura AI - Universal Lecture Synthesizer")
 # Frontend connection enable
 app.add_middleware(
     CORSMiddleware,
-   allow_origins=[
+    allow_origins=[
         "https://lecture-ai-one-black.vercel.app",
         "http://localhost:3000",
     ],
@@ -89,30 +89,67 @@ def transcribe_audio_file(file_path: str) -> str:
 
 
 def download_youtube_audio(url: str, output_path: str = "temp_yt.mp3") -> str:
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urlparse.urlparse(url.strip())
     video_id = None
-    if parsed_url.hostname in ('youtu.be', 'www.youtu.be'):
-        video_id = parsed_url.path.lstrip('/')
-    elif parsed_url.hostname in ('youtube.com', 'www.youtube.com'):
-        if parsed_url.path == '/watch':
-            p = urlparse.parse_qs(parsed_url.query)
-            video_id = p.get('v', [None])[0]
-        elif parsed_url.path.startswith('/shorts/'):
-            video_id = parsed_url.path.split('/')[2]
 
-    if video_id and '?' in video_id:
-        video_id = video_id.split('?')[0]
+    if parsed_url.hostname in ("youtu.be", "www.youtu.be"):
+        video_id = parsed_url.path.lstrip("/")
+    elif parsed_url.hostname in ("youtube.com", "www.youtube.com", "m.youtube.com"):
+        if parsed_url.path == "/watch":
+            video_id = urlparse.parse_qs(parsed_url.query).get("v", [None])[0]
+        elif parsed_url.path.startswith("/shorts/"):
+            video_id = parsed_url.path.split("/")[2]
+        elif parsed_url.path.startswith("/embed/"):
+            video_id = parsed_url.path.split("/")[2]
+
+    if video_id and "?" in video_id:
+        video_id = video_id.split("?")[0]
+    if video_id and "&" in video_id:
+        video_id = video_id.split("&")[0]
 
     if not video_id:
-        raise ValueError("Invalid YouTube URL")
+        raise ValueError("Invalid YouTube URL. Please provide a valid video link.")
 
-    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'hi', 'en-IN'])
-    return " ".join([item['text'] for item in transcript_list])
+    try:
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript = None
+
+        # 1. Check for manual subtitles (English, Hindi)
+        try:
+            transcript = transcript_list.find_transcript(["en", "hi", "en-IN"])
+        except Exception:
+            pass
+
+        # 2. If no manual subtitles, check generated subtitles
+        if not transcript:
+            try:
+                transcript = transcript_list.find_generated_transcript(["en", "hi"])
+            except Exception:
+                pass
+
+        # 3. Fallback to any transcript available and translate to English
+        if not transcript:
+            for t in transcript_list:
+                transcript = t.translate("en")
+                break
+
+        if not transcript:
+            raise ValueError("No subtitles or transcript available for this video.")
+
+        data = transcript.fetch()
+        return " ".join([item.get("text", "") for item in data if "text" in item])
+
+    except Exception as e:
+        print(f"Transcript Error: {e}")
+        raise ValueError(f"Unable to process YouTube captions: {e}")
 
 
 def generate_study_deck(raw_text: str):
     if not raw_text or len(raw_text.strip()) < 5:
-        return {"status": "error", "message": "File me readable text nahi mila. Scanned photo ke bajaye digital text upload karein."}
+        return {
+            "status": "error",
+            "message": "File me readable text nahi mila. Scanned photo ke bajaye digital text upload karein.",
+        }
 
     truncated_text = raw_text[:12000]
 
@@ -216,6 +253,7 @@ def home():
 
 
 @app.post("/process-file")
+@app.post("/api/process-file")
 def process_file(file: Annotated[UploadFile, File()]):
     temp_path = os.path.join(UPLOAD_FOLDER, file.filename)
     with open(temp_path, "wb") as buffer:
@@ -256,11 +294,11 @@ def process_file(file: Annotated[UploadFile, File()]):
 
     except HTTPException:
         raise
-    except Exception as e: # noqa
-       import traceback
-       traceback.print_exc()
-       print(f"FILE ERROR: {e}")
-       raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"FILE ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -271,13 +309,14 @@ class LinkInput(BaseModel):
 
 
 @app.post("/process-youtube")
+@app.post("/api/process-youtube")
 def process_youtube(payload: LinkInput):
     try:
         raw_text = download_youtube_audio(payload.url)
         study_package = generate_study_deck(raw_text)
         return {"status": "success", "data": study_package}
-    except Exception as e: # noqa
-       import traceback
-       traceback.print_exc()
-       print(f"YOUTUBE ERROR: {e}")
-       raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"YOUTUBE ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
